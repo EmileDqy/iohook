@@ -101,6 +101,8 @@ static struct xkb_state *state = NULL;
 static uiohook_event event;
 
 static bool grab_enabled = false;
+static unsigned short int cancel_key_event = 0x00; 
+
 
 // Event dispatch callback.
 static dispatcher_t dispatcher = NULL;
@@ -353,7 +355,7 @@ void hook_event_proc(XPointer closeure, XRecordInterceptData *recorded_data) {
 
 			// Populate key pressed event.
 			event.time = timestamp;
-			event.reserved = 0x00;
+			event.reserved = cancel_key_event;
 
 			event.type = EVENT_KEY_PRESSED;
 			event.mask = get_modifiers();
@@ -369,12 +371,12 @@ void hook_event_proc(XPointer closeure, XRecordInterceptData *recorded_data) {
 			dispatch_event(&event);
 
 			// If the pressed event was not consumed...
-			if (event.reserved ^ 0x01) {
+			if (event.reserved ^ 0x01 || cancel_key_event ^ 0x00) {
 				unsigned int i = 0;
 				for (i = 0; i < count; i++) {
 					// Populate key typed event.
 					event.time = timestamp;
-					event.reserved = 0x00;
+					event.reserved = cancel_key_event;
 
 					event.type = EVENT_KEY_TYPED;
 					event.mask = get_modifiers();
@@ -1104,6 +1106,14 @@ UIOHOOK_API void grab_mouse_click(bool enable) {
 		enable_grab_mouse();
 	} else {
 		disable_grab_mouse();
+	}
+}
+
+UIOHOOK_API void cancel_keys(bool enabled) {
+	if (enabled) {
+		cancel_key_event = 0x01;
+	} else {
+		cancel_key_event = 0x00;
 	}
 }
 

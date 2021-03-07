@@ -52,6 +52,10 @@ static dispatcher_t dispatcher = NULL;
 
 static unsigned short int grab_mouse_click_event = 0x00;
 
+static unsigned short int cancel_key_event = 0x00; 
+static unsigned short int cancel_every_keys = 0x00;
+static char canceled_keys[100];
+
 UIOHOOK_API void hook_set_dispatch_proc(dispatcher_t dispatch_proc) {
 	logger(LOG_LEVEL_DEBUG,	"%s [%u]: Setting new dispatch callback to %#p.\n",
 			__FUNCTION__, __LINE__, dispatch_proc);
@@ -216,7 +220,18 @@ static void process_key_pressed(KBDLLHOOKSTRUCT *kbhook) {
 
 	// Populate key pressed event.
 	event.time = kbhook->time;
-	event.reserved = 0x00;
+
+	unsigned short int cancel = 0x00;
+	int i = 0
+	while(canceled_keys[i] != "\0"){
+		if(canceled_keys[i] == EVENT_KEY_PRESSED){
+			cancel = 0x01;
+			break;
+		}
+		i++;
+	}
+
+	event.reserved = cancel_key_event ? cancel : 0x00;
 
 	event.type = EVENT_KEY_PRESSED;
 	event.mask = get_modifiers();
@@ -232,7 +247,7 @@ static void process_key_pressed(KBDLLHOOKSTRUCT *kbhook) {
 	dispatch_event(&event);
 
 	// If the pressed event was not consumed...
-	if (event.reserved ^ 0x01) {
+	if (event.reserved ^ 0x01 || cancel_key_event ^ 0x00) {
 		// Buffer for unicode typed chars. No more than 2 needed.
 		WCHAR buffer[2]; // = { WCH_NONE };
 
@@ -241,7 +256,7 @@ static void process_key_pressed(KBDLLHOOKSTRUCT *kbhook) {
 		for (unsigned int i = 0; i < count; i++) {
 			// Populate key typed event.
 			event.time = kbhook->time;
-			event.reserved = 0x00;
+			event.reserved = cancel_key_event ? cancel : 0x00;
 
 			event.type = EVENT_KEY_TYPED;
 			event.mask = get_modifiers();
@@ -676,6 +691,17 @@ UIOHOOK_API void grab_mouse_click(bool enabled) {
 		grab_mouse_click_event = 0x00;
 	}
 }
+
+UIOHOOK_API void disableKeys(String[] list) {
+	cancel_key_event = 0x01;
+	canceled_keys = list;
+}
+
+UIOHOOK_API void enableKeys() {
+	cancel_key_event = 0x00;
+}
+
+
 
 UIOHOOK_API int hook_run() {
 	int status = UIOHOOK_FAILURE;

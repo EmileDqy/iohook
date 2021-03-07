@@ -1,4 +1,5 @@
-/* libUIOHook: Cross-platfrom userland keyboard and mouse hooking.
+/* 
+ * libUIOHook: Cross-platfrom userland keyboard and mouse hooking.
  * Copyright (C) 2006-2017 Alexander Barker.  All Rights Received.
  * https://github.com/kwhat/libuiohook/
  *
@@ -93,6 +94,7 @@ static uiohook_event event;
 static dispatcher_t dispatcher = NULL;
 
 static unsigned short int grab_mouse_click_event = 0x00;
+static unsigned short int cancel_key_event = 0x00; 
 
 UIOHOOK_API void hook_set_dispatch_proc(dispatcher_t dispatch_proc) {
 	logger(LOG_LEVEL_DEBUG,	"%s [%u]: Setting new dispatch callback to %#p.\n",
@@ -354,7 +356,7 @@ static inline void process_key_pressed(uint64_t timestamp, CGEventRef event_ref)
 
 	// Populate key pressed event.
 	event.time = timestamp;
-	event.reserved = 0x00;
+	event.reserved = cancel_key_event; // EMILE > set to 0x01 if disabled
 
 	event.type = EVENT_KEY_PRESSED;
 	event.mask = get_modifiers();
@@ -370,7 +372,7 @@ static inline void process_key_pressed(uint64_t timestamp, CGEventRef event_ref)
 	dispatch_event(&event);
 
 	// If the pressed event was not consumed...
-	if (event.reserved ^ 0x01) {
+	if (event.reserved ^ 0x01 || cancel_key_event ^ 0x00) { // EMILE
 		tis_message->event = event_ref;
 		tis_message->length = 0;
 		bool is_runloop_main = CFEqual(event_loop, CFRunLoopGetMain());
@@ -427,7 +429,7 @@ static inline void process_key_pressed(uint64_t timestamp, CGEventRef event_ref)
 		for (unsigned int i = 0; i < tis_message->length; i++) {
 			// Populate key typed event.
 			event.time = timestamp;
-			event.reserved = 0x00;
+			event.reserved = cancel_key_event; // EMILE
 
 			event.type = EVENT_KEY_TYPED;
 			event.mask = get_modifiers();
@@ -592,7 +594,8 @@ static inline void process_modifier_changed(uint64_t timestamp, CGEventRef event
 	*/
 }
 
-/* These events are totally undocumented for the CGEvent type, but are required to grab media and caps-lock keys.
+/* 
+ * These events are totally undocumented for the CGEvent type, but are required to grab media and caps-lock keys.
  */
 static inline void process_system_key(uint64_t timestamp, CGEventRef event_ref) {
 	if( CGEventGetType(event_ref) == NX_SYSDEFINED) {
@@ -1111,6 +1114,15 @@ UIOHOOK_API void grab_mouse_click(bool enabled) {
 		grab_mouse_click_event = 0x00;
 	}
 }
+
+UIOHOOK_API void cancel_keys(bool enabled) {
+	if (enabled) {
+		cancel_key_event = 0x01;
+	} else {
+		cancel_key_event = 0x00;
+	}
+}
+
 
 UIOHOOK_API int hook_run() {
 	int status = UIOHOOK_SUCCESS;

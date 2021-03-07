@@ -512,6 +512,18 @@ NAN_METHOD(GrabMouseClick) {
   }
 }
 
+
+NAN_METHOD(disableKeys) {
+  if (info.Length() > 0){
+    disableKeys(info[0]);
+  }
+}
+
+NAN_METHOD(enableKeys) {
+  enableKeys();
+}
+
+
 NAN_METHOD(DebugEnable) {
   if (info.Length() > 0)
   {
@@ -563,6 +575,12 @@ NAN_MODULE_INIT(Init) {
 
   Nan::Set(target, Nan::New<String>("grabMouseClick").ToLocalChecked(),
   Nan::GetFunction(Nan::New<FunctionTemplate>(GrabMouseClick)).ToLocalChecked());
+
+  Nan::Set(target, Nan::New<String>("disableKeys").ToLocalChecked(),
+  Nan::GetFunction(Nan::New<FunctionTemplate>(disableKeys)).ToLocalChecked());
+
+  Nan::Set(target, Nan::New<String>("enableKeys").ToLocalChecked(),
+  Nan::GetFunction(Nan::New<FunctionTemplate>(enableKeys)).ToLocalChecked());
 }
 
 NODE_MODULE(nodeHook, Init)

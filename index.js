@@ -191,6 +191,22 @@ class IOHook extends EventEmitter {
   }
 
   /**
+   * Disable key_press event propagation.
+   * The key_press event are captured and the event emitted but not propagated to the window.
+   */
+   disableKeys(list) {
+    NodeHookAddon.disableKeys(list);
+  }
+
+  /**
+   * Enable key_press event propagation (enabled by default).
+   * The click event are emitted and propagated.
+   */
+   enableKeys() {
+    NodeHookAddon.enableKeys();
+  }
+
+  /**
    * Local event handler. Don't use it in your code!
    * @param msg Raw event message
    * @private
